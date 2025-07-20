@@ -1,6 +1,8 @@
 const express = require("express");
 const { google } = require("googleapis");
 const router = express.Router();
+// Save or update user tokens in MongoDB
+const UserToken = require("../models/UserToken");
 
 // OAuth2 client setup
 const oauth2Client = new google.auth.OAuth2(
@@ -43,6 +45,18 @@ router.get("/google/callback", async (req, res) => {
 			picture: userInfo.picture,
 		};
 		req.session.tokens = tokens;
+
+		await UserToken.findOneAndUpdate(
+			{ googleId: userInfo.id },
+			{
+				googleId: userInfo.id,
+				email: userInfo.email,
+				name: userInfo.name,
+				picture: userInfo.picture,
+				tokens: tokens,
+			},
+			{ upsert: true, new: true }
+		);
 		console.log(`✅ User authenticated: ${userInfo.email}`);
 		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
 		res.redirect(`${frontendURL}/dashboard?auth=success`);
